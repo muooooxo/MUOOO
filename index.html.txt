@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>MUOOO | 專業代購自助下單</title>
+<!-- LINE LIFF SDK -->
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  :root {
+    /* MUOOO 小蜜蜂色系 */
+    --brand: #f9d342; /* 蜂蜜黃 */
+    --brand-dark: #7b4a34; /* 蜜糖棕 */
+    --brand-light: #fff9e6; /* 奶油白 */
+    --text: #5d4037; /* 深啡色文字 */
+    --muted: #8d6e63;
+    --ok: #8bc34a;
+    --err: #ef5350;
+    --bg: #fffdf0; /* 背景淡黃色 */
+    --radius: 20px;
+  }
+  * { box-sizing: border-box; transition: all 0.2s ease; }
+  
+  body { 
+    margin: 0; 
+    background-color: var(--bg);
+    background-image: radial-gradient(#f9d342 1px, transparent 1px);
+    background-size: 20px 20px;
+    color: var(--text); 
+    font-family: "PingFang TC", "Noto Sans TC", system-ui, sans-serif; 
+    padding: 20px 10px; 
+  }
+  
+  .wrap { width: min(850px, 100%); margin: 0 auto; }
+
+  .card { 
+    background: #fff; 
+    border-radius: var(--radius); 
+    box-shadow: 0 8px 20px rgba(123, 74, 52, 0.08); 
+    padding: 24px; 
+    margin-bottom: 24px; 
+    border: 2px solid #fff3c4; 
+  }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(123, 74, 52, 0.12); }
+  
+  .section-title { 
+    font-size: 1.25rem; 
+    font-weight: 800; 
+    color: var(--brand-dark); 
+    margin: 0 0 20px 0; 
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+    border-bottom: 3px solid var(--brand-light);
+    padding-bottom: 10px;
+  }
+  .section-title::before { 
+    content: "🐝"; 
+    font-size: 1.4rem;
+  }
+
+  label { display: block; margin-bottom: 8px; font-weight: 700; font-size: 0.9rem; color: var(--brand-dark); }
+  input, select, textarea { 
+    width: 100%; 
+    padding: 12px 16px; 
+    border: 2px solid #eee; 
+    border-radius: 12px; 
+    font-size: 1rem; 
+    background: #fff; 
+    color: var(--text); 
+  }
+  input:focus, select:focus, textarea:focus { 
+    outline: none; 
+    border-color: var(--brand); 
+    box-shadow: 0 0 0 4px #fff3c4; 
+  }
+  
+  .error-border { border-color: var(--err) !important; background: #fff8f8; }
+
+  /* 商品區塊 */
+  .product-box { 
+    border: 1px solid #eee; 
+    border-left: 6px solid var(--brand); 
+    border-radius: 12px; 
+    padding: 20px; 
+    margin-bottom: 20px; 
+    background: #fff; 
+    position: relative; 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+  }
+  .product-box[data-type="addon"] { border-left-color: #f1c40f; background: #fffeFA; }
+  .product-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+  
+  /* 附加服務進階樣式 */
+  .addon-group-title {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--brand-dark);
+    margin: 18px 0 10px 0;
+    padding-left: 8px;
+    border-left: 4px solid var(--brand);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .addon-service-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 10px;
+  }
+  .addon-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fffdf5;
+    border: 2px solid #fce38a;
+    padding: 10px 14px;
+    border-radius: 14px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--brand-dark);
+    user-select: none;
+  }
+  .addon-item:hover {
+    background: #fff5d1;
+    border-color: var(--brand);
+  }
+  .addon-item-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .addon-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--brand-dark);
+    cursor: pointer;
+  }
+  .price-tag {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #d32f2f;
+    background: #fff;
+    padding: 2px 8px;
+    border-radius: 20px;
+    border: 1px solid #f9d342;
+    white-space: nowrap;
+  }
+  .price-tag.second-pay {
+    color: #7b4a34;
+    background: #f0e6df;
+    border-color: #d7ccc8;
+  }
+
+  /* 可愛便條紙 (運費說明) */
+  .cute-note {
+    background: var(--brand-light);
+    border: 2px dashed var(--brand);
+    border-radius: 15px;
+    padding: 15px 20px;
+    color: var(--text);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    position: relative;
+    text-align: center;
+  }
+  .btn-link {
+    display: inline-block;
+    background: #fff;
+    color: var(--brand-dark);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    text-decoration: none;
+    border: 1px solid var(--brand);
+    margin-top: 5px;
+    box-shadow: 0 2px 0 var(--brand);
+  }
+  .btn-link:active { transform: translateY(2px); box-shadow: none; }
+
+  /* 倉庫聲明 Alert */
+  .warehouse-alert {
+    background: #fff8e1;
+    border: 2px dashed var(--brand);
+    border-radius: 16px;
+    padding: 14px 18px;
+    margin-bottom: 15px;
+    font-size: 0.88rem;
+    color: var(--brand-dark);
+    line-height: 1.6;
+  }
+
+  /* 付款引導卡片 */
+  .payment-guide {
+    background-color: #fff;
+    border: 2px dashed var(--brand-dark);
+    border-radius: 16px;
+    padding: 25px 20px;
+    text-align: center;
+    color: var(--text);
+    margin-bottom: 25px;
+    position: relative;
+    box-shadow: 0 4px 15px rgba(123, 74, 52, 0.05);
+  }
+  .payment-badge {
+    background: var(--brand-dark);
+    color: #fff;
+    font-weight: 900;
+    padding: 6px 16px;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    display: inline-block;
+    margin-bottom: 12px;
+    box-shadow: 0 3px 0 var(--brand);
+  }
+  .brand-highlight {
+    color: var(--brand-dark);
+    font-weight: 900;
+    font-size: 1.4rem;
+    background: var(--brand);
+    padding: 0 8px;
+    border-radius: 4px;
+    margin: 0 4px;
+  }
+
+  /* 綁定提示 */
+  .member-alert {
+    background: #fff;
+    border-top: 4px solid var(--brand);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    padding: 20px;
+    border-radius: 0 0 15px 15px;
+    margin-bottom: 25px;
+    text-align: center;
+  }
+  .btn-member {
+    display: inline-block; margin-top: 10px;
+    background: var(--brand-dark); color: #fff;
+    padding: 10px 25px; border-radius: 50px;
+    text-decoration: none; font-size: 0.95rem; font-weight: bold;
+    box-shadow: 0 4px 10px rgba(123,74,52,0.3);
+  }
+
+  /* 金額總計卡 */
+  .amount-card { 
+    background: linear-gradient(135deg, var(--brand), #f1c40f); 
+    color: var(--brand-dark); 
+    padding: 24px; 
+    border-radius: var(--radius); 
+    display: flex; justify-content: space-between; align-items: center; 
+    margin-top: 20px;
+    box-shadow: 0 6px 15px rgba(249, 211, 66, 0.3);
+  }
+  .amount-val { font-size: 2rem; font-weight: 900; }
+  
+  /* 折扣標籤樣式 */
+  #discountTag {
+    display: inline-block;
+    background: #fff;
+    color: #ef5350;
+    font-size: 12px;
+    padding: 2px 10px;
+    border-radius: 50px;
+    font-weight: 800;
+    margin-bottom: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    animation: bounce 0.5s ease infinite alternate;
+  }
+  @keyframes bounce { from { transform: scale(1); } to { transform: scale(1.05); } }
+
+  .btn { border: 0; border-radius: 15px; padding: 12px 24px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 1rem; }
+  .btn-primary { background: var(--brand-dark); color: #fff; width: 100%; box-shadow: 0 4px 14px rgba(123, 74, 52, 0.3); }
+  .btn-primary:hover { transform: translateY(-2px); background: #5d4037; }
+  .btn-outline { background: #fff; border: 2px solid var(--brand); color: var(--brand-dark); }
+  .btn-outline:hover { background: var(--brand-light); }
+
+  .summary-area { background: #3e2723; color: #fff3e0; padding: 24px; border-radius: 16px; font-family: monospace; font-size: 13px; white-space: pre-wrap; margin-top: 20px; line-height: 1.7; border: 3px dashed var(--brand); }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 600px) { .grid { grid-template-columns: 1fr; gap: 12px; } }
+  
+  .logo-area { text-align: center; margin-bottom: 20px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="logo-area">
+    <h1 style="font-size: 2.2rem; font-weight: 900; color: var(--brand-dark); margin: 10px 0 5px 0;">MUOOO</h1>
+    <p style="color: var(--muted); font-weight: 600;">自助下單 ‧ 自動化同步系統</p>
+  </div>
+
+  <div class="member-alert">
+    <div style="font-weight: 800; font-size: 1.1rem; color: var(--brand-dark); margin-bottom:5px;">⚠️ 下單前請注意</div>
+    <p style="margin: 5px 0; font-size: 0.95rem; color: #666; line-height: 1.5;">
+      為確保訂單同步，請先確認已完成會員綁定。<br>若尚未綁定，客服無法為您建立訂單喔！
+    </p>
+    <a href="https://liff.line.me/1657061415-LjvB5EIg" target="_blank" class="btn-member">點我前往綁定 / 查詢會員資料</a>
+  </div>
+
+  <div class="card" style="padding: 16px; border: none; background: #fff; border: 2px dashed #ddd;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-weight: 800; color: #aaa;">🐝 ORDER ID: <span id="orderIdDisplay" style="color:var(--brand-dark);">...</span></span>
+      <button class="btn btn-outline" style="padding: 4px 12px; font-size: 12px; border-radius: 10px; border-color:#ccc; color:#888;" onclick="copyText($('orderIdDisplay').textContent)">複製編號</button>
+    </div>
+  </div>
+
+  <!-- 第一區：商品報價 -->
+  <div class="card">
+    <div class="section-title">商品報價清單</div>
+    <div id="product-list"></div>
+    <div class="grid">
+      <button class="btn btn-outline" onclick="addProduct(false)">＋ 新增一般商品</button>
+      <button class="btn btn-outline" style="border-color: #f1c40f; color: #9a7d0a;" onclick="addProduct(true)">＋ 新增加購商品</button>
+    </div>
+    
+    <div style="background: #fff9e6; padding: 12px; border-radius: 12px; margin-top: 15px; border: 1px solid #f9d342;">
+        <div style="font-weight: 800; font-size: 0.85rem; color: var(--brand-dark); margin-bottom: 4px;">🎁 限時自助下單多件優惠 (不含加購品)：</div>
+        <div style="font-size: 0.8rem; color: #7b4a34;">滿 3 件折 $20 / 滿 5 件折 $50 / 滿 10 件折 $120</div>
+    </div>
+
+    <p style="font-size: 12px; color: var(--err); margin-top: 12px; font-weight: 600;">
+      ※ 計費規則：單件滿 400 RMB 免代購費；未滿 400 RMB 統一採 5.5 匯率 + 基本服務費。<br>
+      ※ 加購商品判定：僅限店家頁面有明確標記「加購」之商品。
+    </p>
+
+    <div class="amount-card">
+      <div>
+        <div style="font-size: 13px; opacity: 0.9; font-weight: 600; margin-bottom: 4px;">第一階段應付 (商品與附加服務)</div>
+        <div id="discountArea" style="display: none;">
+            <div id="discountTag">...</div>
+        </div>
+        <div style="font-size: 12px; opacity: 0.8;">※ 此金額不包含國際運費</div>
+      </div>
+      <div style="text-align: right;">
+        <div id="originalTotal" style="font-size: 14px; text-decoration: line-through; opacity: 0.7; display: none; margin-bottom: -5px;"></div>
+        <div class="amount-val" id="goodsTotal">NT$ 0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 第二區：附加服務加購 -->
+  <div class="card">
+    <div class="section-title">附加服務加購（可複選）</div>
+
+    <!-- 倉庫說明提示 -->
+    <div class="warehouse-alert">
+      <b>📢 物流倉庫服務與保固聲明：</b><br>
+      以上內外包裝項目皆為<b>「物流倉庫原價收取」</b>之服務費用，詳細內容請參考說明頁面！
+    </div>
+
+    <!-- 🎁 外包裝加購服務 -->
+    <div class="addon-group-title">🎁 外包裝加購服務</div>
+    <div class="addon-service-grid">
+      <label class="addon-item">
+        <div class="addon-item-left">
+          <input type="checkbox" class="extra-service-cb" data-name="包裝氣泡棉" data-price="60" onchange="calcAll()">
+          <span>包裝氣泡棉</span>
+        </div>
+        <span class="price-tag">NT$ 60</span>
+      </label>
+
+      <label class="addon-item">
+        <div class="addon-item-left">
+          <input type="checkbox" class="extra-service-cb" data-name="包裝氣柱袋(二補計算)" data-price="0" onchange="calcAll()">
+          <span>包裝氣柱袋</span>
+        </div>
+        <span class="price-tag second-pay">依實際計價 (二補)</span>
+      </label>
+
+      <label class="addon-item">
+        <div class="addon-item-left">
+          <input type="checkbox" class="extra-service-cb" data-name="打木架／木箱(二補計算)" data-price="0" onchange="calcAll()">
+          <span>打木架／木箱</span>
+        </div>
+        <span class="price-tag second-pay">依實際計價 (二補)</span>
+      </label>
+
+      <label class="addon-item">
+        <div class="addon-item-left">
+          <input type="checkbox" class="extra-service-cb" data-name="確認外包裝標籤" data-price="20" onchange="calcAll()">
+          <span>確認外包裝標籤</span>
+        </div>
+        <span class="price-tag">NT$ 20</span>
+      </label>
+    </div>
+
+    <!-- 📦 內包裝加購服務 -->
+    <div class="addon-group-title">📦 內包裝加購服務</div>
+    <div class="addon-service-grid">
+      <label class="addon-item" style="grid-column: 1 / -1; background: #fff5d1; border-color: var(--brand);">
+        <div class="addon-item-left">
+          <input type="checkbox" class="extra-service-cb" data-name="基礎開箱費(內包裝必加項)" data-price="50" onchange="calcAll()">
+          <span><b>基礎開箱費</b> <small style="color: #d32f2f;">(內包裝服務必加項)</small></span>
+        </div>
+        <span class="price-tag">NT$ 50</span>
+      </label>
+
+      <label class="addon-item">
+        <div class="addon-item-left">
+          <input type="checkbox" class="extra-service-cb" id="cbCountItems" data-name="清點數量" data-type="per_item" data-price="2" onchange="toggleItemQtyInput(); calcAll();">
+          <span>清點數量</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <input type="number" id="addonCountQty" value="1" min="1" style="width: 50px; padding: 2px 6px; font-size: 0.85rem; display: none;" oninput="calcAll()">
+          <span class="price-tag">NT$ 2 / 件</span>
+        </div>
+      </label>
+
+      <label class="addon-item">
+        <div class="addon-item-left">
+          <input type="checkbox" class="extra-service-cb" data-name="內容物拍照" data-price="30" onchange="calcAll()">
+          <span>內容物拍照</span>
+        </div>
+        <span class="price-tag">NT$ 30</span>
+      </label>
+
+      <label class="addon-item">
+        <div class="addon-item-left">
+          <input type="checkbox" class="extra-service-cb" data-name="確認型號" data-price="30" onchange="calcAll()">
+          <span>確認型號</span>
+        </div>
+        <span class="price-tag">NT$ 30</span>
+      </label>
+
+      <label class="addon-item">
+        <div class="addon-item-left">
+          <input type="checkbox" class="extra-service-cb" data-name="開箱驗貨" data-price="100" onchange="calcAll()">
+          <span>開箱驗貨</span>
+        </div>
+        <span class="price-tag">NT$ 100</span>
+      </label>
+
+      <label class="addon-item">
+        <div class="addon-item-left">
+          <input type="checkbox" class="extra-service-cb" data-name="填充氣柱袋(二補計算)" data-price="0" onchange="calcAll()">
+          <span>填充氣柱袋</span>
+        </div>
+        <span class="price-tag second-pay">依實際計價 (二補)</span>
+      </label>
+    </div>
+
+    <!-- 🧷 其他加購選項 -->
+    <div class="addon-group-title">🧷 其他加購選項</div>
+    <div class="addon-service-grid">
+      <label class="addon-item">
+        <div class="addon-item-left">
+          <input type="checkbox" class="extra-service-cb" data-name="易碎品貼紙" data-price="5" onchange="calcAll()">
+          <span>易碎品貼紙</span>
+        </div>
+        <span class="price-tag">NT$ 5</span>
+      </label>
+    </div>
+
+    <!-- 右下角詳細說明連結 -->
+    <div style="margin-top: 15px; text-align: right;">
+      <a href="https://sites.google.com/view/muooo/%E4%BB%A3%E8%B3%BC%E8%AA%AA%E6%98%8E/%E8%AA%AA%E6%98%8E%E5%8A%A0%E8%B3%BC%E6%9C%8D%E5%8B%99?authuser=0" target="_blank" class="btn-link">⭐ 查看詳細加購項目說明</a>
+    </div>
+  </div>
+
+  <!-- 第三區：運輸方式 -->
+  <div class="card">
+    <div class="section-title">運輸方式選擇</div>
+    
+    <div class="cute-note">
+      <div style="font-weight:800; margin-bottom:5px; color:var(--brand-dark); font-size:1rem;">📦 關於運費計算</div>
+      商品抵達集運倉後，將依據實際重量計算運費，屆時客服會通知您補款。<br>
+      <a href="https://sites.google.com/view/muooo/%E4%BB%A3%E8%B3%BC%E8%AA%AA%E6%98%8E/%E8%B2%BB%E7%94%A8%E9%81%8B%E8%BC%B8%E8%B2%BB%E7%94%A8?authuser=0" target="_blank" class="btn-link">📄 查看運費計價表</a>
+    </div>
+    
+    <label>請選擇運輸方式 <span style="color:var(--err);">*</span></label>
+    <select id="intlMode" class="required" onchange="updateShippingUI()" style="border: 2px solid var(--brand);">
+      <option value="">-- 請下拉選擇 --</option>
+      <option value="direct-sea">直寄海快</option>
+      <option value="direct-air">直寄空運</option>
+      <option value="forward-sea">⭐推薦⭐ 轉寄海快</option>
+    </select>
+
+    <div id="ezwayNote" style="display:none; margin-top:15px; color: #d32f2f; font-size: 0.9rem; background:#fff5f5; padding:10px; border-radius:10px; text-align:center;">
+      <b>📢 EZ WAY 實名認證提醒</b><br>
+      您選擇「直寄」，請確保手機已註冊 <b>EZ WAY 易利委</b>，否則無法通關。
+      <b>直寄須提供詳細個人資料，若介意請選擇轉寄</b><br>
+    </div>
+  </div>
+
+  <!-- 第四區：付款與會員確認 -->
+  <div class="card">
+    <div class="section-title">付款與會員確認</div>
+    
+    <div class="payment-guide">
+      <div class="payment-badge">💳 付款方式</div>
+      <div style="line-height: 1.8; font-size: 1rem;">
+        請於送出訂單後，至 LINE 客服輸入關鍵字：<br>
+        <span class="brand-highlight">下單付款</span><br>
+        系統將自動傳送付款資訊給您！
+      </div>
+    </div>
+
+    <h3 style="font-size:1rem; color:var(--brand-dark); margin-bottom:15px; border-left:4px solid var(--brand); padding-left:10px;">👤 會員身分綁定</h3>
+    <div class="grid">
+      <div>
+        <label>會員姓名 <span style="color:var(--err);">*</span></label>
+        <input type="text" id="memberName" class="required" placeholder="綁定的真實姓名">
+      </div>
+      <div>
+        <label>會員電話 <span style="color:var(--err);">*</span></label>
+        <input type="tel" id="memberPhone" class="required" placeholder="09xxxxxxxx">
+      </div>
+    </div>
+
+    <div id="shippingArea" style="display: none; margin-top: 25px; border-top: 2px dashed #eee; padding-top: 20px;">
+      <h3 style="font-size:1rem; color:var(--ok); margin-bottom:15px; border-left:4px solid var(--ok); padding-left:10px;">🚚 直寄收件資料</h3>
+      
+      <label>台灣段送貨方式</label>
+      <select id="twMode" onchange="updateShippingUI()">
+        <option value="home">宅配到府</option>
+        <option value="cvs">超商取貨</option>
+      </select>
+
+      <div class="grid" style="margin-top:15px;">
+        <div><label>收件人姓名 <span style="color:var(--err);">*</span></label><input type="text" id="realName" class="required"></div>
+        <div><label>手機號碼 <span style="color:var(--err);">*</span></label><input type="tel" id="mobile" class="required" maxlength="10"></div>
+      </div>
+      
+      <label>收件地址 <span style="color:var(--err);">*</span></label>
+      <textarea id="addr" class="required" rows="2" placeholder="請填寫完整街道門牌地址"></textarea>
+      
+      <div id="cvsNameField" style="display: none;">
+        <label>7-11 門市名稱 <span style="color:var(--err);">*</span></label>
+        <input type="text" id="cvsName" class="required" placeholder="例如：松山門市">
+      </div>
+      
+      <label>身分證字號 <span style="color:var(--err);">* (報關必須)</span></label>
+      <input type="text" id="idNo" class="required" maxlength="10" placeholder="A123456789">
+    </div>
+  </div>
+
+  <div class="card" style="border: none; background: none; box-shadow: none; padding: 0;">
+    <button class="btn btn-primary" style="padding: 20px; font-size: 1.1rem;" onclick="submitOrder()">🍯 建立訂單並自動傳送至 LINE 聊天室</button>
+  </div>
+
+  <!-- 結果展示卡（作為備用/發送失敗時顯示） -->
+  <div id="resultCard" class="card" style="display: none;">
+    <div class="section-title" style="color: var(--ok);">🐝 訂單資料已送出</div>
+    <p id="resultMsg" style="font-size: 14px; color: var(--muted);">訂單摘要已生成！請複製下方摘要傳送給 LINE 客服，並輸入關鍵字<b>「下單付款」</b>。</p>
+    <div class="summary-area" id="orderSummary"></div>
+    <div class="grid" style="margin-top: 20px;">
+      <button class="btn btn-outline" onclick="copyText($('orderSummary').textContent)">📋 複製摘要</button>
+      <a class="btn btn-primary" href="https://line.me/R/ti/p/@Muooo" target="_blank" style="background: #06c755;">前往 LINE 聯繫客服</a>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const GOOGLE_FORM_ACTION = "https://docs.google.com/forms/d/e/1FAIpQLSf_iUG0VF5oGn8O2RdAA2IGEeFrXlDXT_AV701OTTQ2OycjTw/formResponse";
+const LIFF_ID = "1657061415-tPbkq2iv";
+
+let isLiffInitialized = false;
+
+window.onload = () => {
+  addProduct(false); // 預設新增第一個商品
+
+  // 初始化 LINE LIFF SDK
+  liff.init({ liffId: LIFF_ID })
+    .then(() => {
+      isLiffInitialized = true;
+    })
+    .catch((err) => {
+      console.error("LIFF 初始化失敗", err);
+    });
+};
+
+function copyText(t) {
+  const s = document.createElement("textarea"); s.value = t;
+  document.body.appendChild(s); s.select();
+  document.execCommand("copy"); document.body.removeChild(s);
+  alert("摘要已複製！");
+}
+
+function genOrderId(){
+  const d = new Date();
+  return "M" + d.getFullYear().toString().slice(-2) + 
+         String(d.getMonth()+1).padStart(2,"0") + 
+         String(d.getDate()).padStart(2,"0") + "-" + 
+         String(d.getHours()).padStart(2,"0") + 
+         String(d.getMinutes()).padStart(2,"0") + "-" + 
+         Math.random().toString(36).slice(2,6).toUpperCase();
+}
+const orderId = genOrderId();
+$('orderIdDisplay').textContent = orderId;
+
+let pCount = 0;
+function addProduct(isAddon = false) {
+  pCount++;
+  const div = document.createElement('div');
+  div.className = 'product-box';
+  div.dataset.type = isAddon ? "addon" : "product";
+  
+  div.innerHTML = `
+    <div class="product-header">
+      <span style="font-weight:800; color:var(--brand-dark);">${isAddon?'【加購】':'【商品】'} #${pCount}</span>
+      <button class="btn btn-outline" style="color:var(--err); border:none; padding:2px; font-size:12px;" onclick="this.closest('.product-box').remove(); calcAll();">移除</button>
+    </div>
+    <label>商品名稱 <span style="color:var(--muted); font-size:0.8rem; font-weight:normal;">(非必填)</span></label>
+    <input type="text" class="p-name" placeholder="選填，填寫可加快核對速度" style="margin-bottom:15px;">
+    
+    <label>商品連結 <span style="color:var(--err);">*</span></label>
+    <input type="url" class="p-link required" style="margin-bottom:15px;">
+    
+    <div class="grid">
+      <div><label>人民幣單價 <span style="color:var(--err);">*</span></label><input type="number" class="p-price required" step="0.01" oninput="calcAll()"></div>
+      <div><label>數量 <span style="color:var(--err);">*</span></label><input type="number" class="p-qty required" value="1" min="1" oninput="calcAll()"></div>
+    </div>
+    <div class="grid" style="margin-top:15px;">
+      <div><label>境內郵費(RMB)</label><input type="number" class="p-shipping" min="0" step="0.01" placeholder="包郵請填0" oninput="calcAll()"></div>
+      <div><label>規格尺寸</label><input type="text" class="p-spec" placeholder="例: 黑/XL"></div>
+    </div>
+    <div style="margin-top:15px;">
+      <label>備註需求</label><input type="text" class="p-memo">
+    </div>
+    <div class="item-total" style="text-align:right; margin-top:15px; font-weight:700; color:var(--brand-dark);">報價：NT$ 0</div>
+  `;
+  $('product-list').appendChild(div);
+  calcAll();
+}
+
+function toggleItemQtyInput() {
+  const cb = $('cbCountItems');
+  const input = $('addonCountQty');
+  input.style.display = cb.checked ? 'inline-block' : 'none';
+}
+
+function calcAll() {
+  let gSum = 0; 
+  let normalQtyTotal = 0; 
+  let normalCountForServiceFee = 0; 
+  const RATE_UNIFIED = 5.5; 
+
+  // 1. 計算商品金額
+  document.querySelectorAll('.product-box').forEach(p => {
+    const price = parseFloat(p.querySelector('.p-price').value) || 0;
+    const qty = parseInt(p.querySelector('.p-qty').value) || 1;
+    const shipping = parseFloat(p.querySelector('.p-shipping').value) || 0; 
+    const isAddon = p.dataset.type === "addon";
+    let sub = 0;
+    
+    if (price > 0) {
+      if (price >= 400) { 
+        sub = (price * qty + shipping) * RATE_UNIFIED; 
+        if (!isAddon) normalQtyTotal += qty;
+      } 
+      else {
+        if (isAddon) { 
+          sub = ((price * qty) + shipping) * RATE_UNIFIED + (30 * qty); 
+        } 
+        else { 
+          normalQtyTotal += qty;
+          for(let i=0; i<qty; i++) {
+            normalCountForServiceFee++;
+            sub += (price * RATE_UNIFIED) + (normalCountForServiceFee === 1 ? 80 : 70);
+          }
+          sub += (shipping * RATE_UNIFIED);
+        }
+      }
+    }
+    const roundedSub = Math.ceil(sub);
+    p.querySelector('.item-total').textContent = `報價：NT$ ${roundedSub.toLocaleString()}`;
+    gSum += roundedSub;
+  });
+
+  // 2. 多件滿件折抵優惠
+  let discount = 0;
+  let discountMsg = "";
+  
+  if (normalQtyTotal >= 10) {
+    discount = 120;
+    discountMsg = "🎉 自助滿10件折 $120";
+  } else if (normalQtyTotal >= 5) {
+    discount = 50;
+    discountMsg = "🎉 自助滿5件折 $50";
+  } else if (normalQtyTotal >= 3) {
+    discount = 20;
+    discountMsg = "🎉 自助滿3件折 $20";
+  }
+
+  // 3. 計算附加服務金額
+  let extraServiceTotal = 0;
+  document.querySelectorAll('.extra-service-cb:checked').forEach(cb => {
+    if (cb.dataset.type === "per_item") {
+      const itemQty = parseInt($('addonCountQty').value) || 1;
+      extraServiceTotal += (parseInt(cb.dataset.price) || 0) * itemQty;
+    } else {
+      extraServiceTotal += parseInt(cb.dataset.price) || 0;
+    }
+  });
+
+  // UI 顯示控制
+  if (discount > 0) {
+    $('discountArea').style.display = 'block';
+    $('discountTag').textContent = discountMsg;
+    $('originalTotal').style.display = 'block';
+    $('originalTotal').textContent = "NT$ " + (gSum + extraServiceTotal).toLocaleString();
+  } else {
+    $('discountArea').style.display = 'none';
+    $('originalTotal').style.display = 'none';
+  }
+
+  // 最終第一階段金額
+  const finalGoods = gSum - discount + extraServiceTotal;
+  $('goodsTotal').textContent = "NT$ " + (finalGoods > 0 ? finalGoods : 0).toLocaleString();
+}
+
+function updateShippingUI() {
+  const mode = $('intlMode').value;
+  const isDirect = mode.includes('direct');
+  
+  $('shippingArea').style.display = isDirect ? 'block' : 'none';
+  $('ezwayNote').style.display = isDirect ? 'block' : 'none';
+  
+  if (isDirect) {
+    const isCvs = $('twMode').value === 'cvs';
+    $('cvsNameField').style.display = isCvs ? 'block' : 'none';
+    if (isCvs) { $('cvsName').classList.add('required'); } 
+    else { $('cvsName').classList.remove('required'); $('cvsName').classList.remove('error-border'); }
+  }
+}
+
+function submitOrder() {
+  let hasError = false;
+  document.querySelectorAll('.required').forEach(el => {
+    if (el.offsetParent !== null && !el.value.trim()) {
+      el.classList.add('error-border');
+      hasError = true;
+    } else {
+      el.classList.remove('error-border');
+    }
+  });
+
+  if (hasError) {
+    alert("❌ 還有必填欄位沒寫到喔！");
+    const errEl = document.querySelector('.error-border');
+    if(errEl) errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  let pDetails = "";
+  document.querySelectorAll('.product-box').forEach((p, index) => {
+    const rmb = p.querySelector('.p-price').value;
+    const qty = p.querySelector('.p-qty').value;
+    const shipping = p.querySelector('.p-shipping').value || '0';
+    const sub = p.querySelector('.item-total').textContent;
+    const spec = p.querySelector('.p-spec').value || '無';
+    const memo = p.querySelector('.p-memo').value || '無';
+    const typeTag = p.dataset.type === "addon" ? "【加購商品】" : "【一般商品】";
+    
+    const pName = p.querySelector('.p-name').value.trim() || `未命名商品 #${index + 1}`;
+    
+    pDetails += `${typeTag} ${pName}\n    規格:${spec} | 備註:${memo}\n    明細:RMB ${rmb} x ${qty} (郵費:${shipping}) | ${sub}\n    網址:${p.querySelector('.p-link').value}\n\n`;
+  });
+
+  // 整理勾選的附加服務文字
+  let selectedServices = [];
+  document.querySelectorAll('.extra-service-cb:checked').forEach(cb => {
+    if (cb.dataset.type === "per_item") {
+      const itemQty = parseInt($('addonCountQty').value) || 1;
+      const totalCost = itemQty * 2;
+      selectedServices.push(`${cb.dataset.name} x${itemQty}件 (+NT$ ${totalCost})`);
+    } else {
+      const priceVal = parseInt(cb.dataset.price);
+      const priceText = priceVal > 0 ? ` (+NT$ ${priceVal})` : " (二補計費)";
+      selectedServices.push(`${cb.dataset.name}${priceText}`);
+    }
+  });
+  const extraServicesText = selectedServices.length > 0 ? selectedServices.join("\n    - ") : "無加購";
+
+  const modeSel = $('intlMode');
+  const modeText = modeSel.options[modeSel.selectedIndex].text;
+  
+  const isDirect = modeSel.value.includes('direct');
+  const shippingInfo = isDirect 
+    ? `
+👤 直寄收件資料：
+${$('realName').value}
+${$('mobile').value}
+${$('idNo').value}
+${$('addr').value}
+${$('twMode').value === 'cvs' ? '門市：'+$('cvsName').value : '方式：宅配'}`
+    : `👤 收件方式：轉寄 `;
+
+  const activeDiscount = $('discountArea').style.display === 'block' ? `(${$('discountTag').textContent})` : "";
+
+  const summary = `【 MUOOO 自助訂單摘要 】
+單號：${orderId}
+會員：${$('memberName').value} / ${$('memberPhone').value}
+-----------------------
+💰 應付金額 ：${$('goodsTotal').textContent} ${activeDiscount}
+🛠️ 附加服務 ：
+    - ${extraServicesText}
+(⚠️ 付款回報：請至 LINE 輸入關鍵字『下單付款』)
+
+🚚 運輸選擇：${modeText}
+${shippingInfo}
+-----------------------
+📦 商品明細 (含原價/報價/備註)：
+${pDetails}
+-----------------------
+💡 訂單已建立，請輸入關鍵字「下單付款」進行付款與對帳。`;
+
+  // 1. 同步背景資料庫 (Google Forms)
+  const memberIdentity = `會員:${$('memberName').value} / 電話:${$('memberPhone').value}`;
+  const body = new URLSearchParams({
+    "entry.1746867203": orderId,
+    "entry.1748508385": summary,
+    "entry.751786061": $('goodsTotal').textContent,
+    "entry.1327908673": "0", 
+    "entry.595640404": "0", 
+    "entry.1656931618": memberIdentity 
+  });
+  fetch(GOOGLE_FORM_ACTION, { method: 'POST', mode: 'no-cors', body: body });
+
+  // 2. 判斷環境並發送 LINE 訊息
+  if (isLiffInitialized && liff.isInClient()) {
+    liff.sendMessages([
+      {
+        type: 'text',
+        text: summary
+      }
+    ]).then(() => {
+      alert("🎉 訂單摘要已自動傳送到 LINE 聊天室！請於聊天室輸入「下單付款」。");
+      liff.closeWindow(); // 發送完畢自動關閉頁面
+    }).catch((err) => {
+      console.error("LIFF 發送失敗", err);
+      // 捕捉首次授權中斷狀況：引導使用者再次點擊
+      alert("🔑 已完成傳送授權！請再按一次「建立訂單」按鈕即可自動傳送。");
+    });
+  } else {
+    // 若在外部瀏覽器開啟（備用方案）
+    $('orderSummary').textContent = summary;
+    $('resultMsg').innerHTML = '💡 訂單摘要已生成！請複製下方摘要傳送給 LINE 客服，並輸入關鍵字<b>「下單付款」</b>。';
+    $('resultCard').style.display = 'block';
+    $('resultCard').scrollIntoView({ behavior: 'smooth' });
+  }
+}
+</script>
+</body>
+</html>
